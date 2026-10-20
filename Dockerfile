@@ -4,8 +4,10 @@
 FROM ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:ffbb0d908f22ca66c0261dc96b260f4a12429eda88bd561c09fd9fa94caa220a
 
 ENV PYTHONUNBUFFERED=1
+# Optional default: make HF caching land on the Runpod mounted volume.
+# You can omit this if you prefer to set HF_HOME in hub.json only.
+ENV HF_HOME=/runpod-volume/huggingface-cache
 
-# Set up the working directory
 WORKDIR /
 
 RUN apt-get update --yes --quiet && DEBIAN_FRONTEND=noninteractive apt-get install --yes --quiet --no-install-recommends \
@@ -23,19 +25,15 @@ RUN apt-get update --yes --quiet && DEBIAN_FRONTEND=noninteractive apt-get insta
     python3.11-tk \
     bash \
     curl && \
-    ln -s /usr/bin/python3.11 /usr/bin/python && \
+    ln -sf /usr/bin/python3.11 /usr/bin/python && \
     curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Set the working directory
 WORKDIR /work
-
-# Add ./src as /work
 ADD ./src /work
 
-# Install runpod and its dependencies
 RUN pip install -r ./requirements.txt && chmod +x /work/start.sh
 
-# Set the entrypoint
-ENTRYPOINT ["/bin/sh", "-c", "/work/start.sh"]
+ENTRYPOINT ["/work/start.sh"]
+
