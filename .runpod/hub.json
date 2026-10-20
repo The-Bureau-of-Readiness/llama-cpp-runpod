@@ -209,16 +209,6 @@
                 }
             },
             {
-              "key": "HUGGINGFACE_HUB_CACHE",
-              "input": {
-                    "name": "HUGGINGFACE_HUB_CACHE (hub cache dir)",
-                    "type": "string",
-                    "description": "Directory for Hugging Face hub cache. Should be inside HF_HOME. Defaults to /runpod-volume/huggingface-cache/hub.",
-                    "default": "/runpod-volume/huggingface-cache/hub",
-                    "advanced": true
-              }
-            },
-            {
                 "key": "MAX_CONCURRENCY",
                 "input": {
                     "name": "Max Concurrency per Worker",
