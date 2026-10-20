@@ -207,6 +207,56 @@
                     "default": "-lm mmap --lazy-mode on",
                     "advanced": true
                 }
+            },
+            {
+              "key": "ENABLE_METRICS",
+              "input": {
+                "name": "Enable metrics (/metrics)",
+                "type": "boolean",
+                "description": "If enabled, starts llama-server with --metrics to expose Prometheus metrics from inside the worker.",
+                "default": false,
+                "advanced": true
+              }
+            },
+            {
+              "key": "METRICS_PORT",
+              "input": {
+                "name": "Metrics port",
+                "type": "number",
+                "description": "Port used by llama-server metrics when enabled (passed via --metrics-port if supported; otherwise used for scraping/pushing configuration).",
+                "default": 8080,
+                "advanced": true
+              }
+            },
+            {
+              "key": "PUSHGATEWAY_URL",
+              "input": {
+                "name": "Pushgateway URL (optional)",
+                "type": "string",
+                "description": "If set, the worker will push metrics to this Prometheus Pushgateway URL (e.g. http://your-host:9091). Leave empty to disable pushing.",
+                "default": "",
+                "advanced": true
+              }
+            },
+            {
+              "key": "PUSHGATEWAY_JOB",
+              "input": {
+                "name": "Pushgateway job label",
+                "type": "string",
+                "description": "Prometheus job label used when pushing to Pushgateway.",
+                "default": "llamacpp-serverless",
+                "advanced": true
+              }
+            },
+            {
+              "key": "PUSH_INTERVAL_SECONDS",
+              "input": {
+                "name": "Push interval (seconds)",
+                "type": "number",
+                "description": "How often to push metrics to Pushgateway while the worker is running (only when PUSHGATEWAY_URL is set).",
+                "default": 2,
+                "advanced": true
+              }
             }
         ]
     }
