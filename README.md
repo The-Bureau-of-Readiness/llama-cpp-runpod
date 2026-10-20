@@ -1,5 +1,5 @@
-[![Runpod](https://api.runpod.io/badge/The-Bureau-of-Readiness/llama-cpp-runpod)](https://console.runpod.io/hub/listing/The-Bureau-of-Readiness/llama-cpp-runpod)
-[![Release](https://img.shields.io/github/v/release/The-Bureau-of-Readiness/llama-cpp-runpod?display_name=tag&sort=semver)](https://github.com/The-Bureau-of-Readiness/llama-cpp-runpod/releases)
+[![Runpod](https://api.runpod.io/badge/The-Bureau-of-Readiness/qwen3.8-gguf_vision-256k-1m_serverless-llama-cpp)](https://console.runpod.io/hub/listing/The-Bureau-of-Readiness/qwen3.8-gguf_vision-256k-1m_serverless-llama-cpp)
+[![Release](https://img.shields.io/github/v/release/The-Bureau-of-Readiness/qwen3.8-gguf_vision-256k-1m_serverless-llama-cpp?display_name=tag&sort=semver)](https://github.com/The-Bureau-of-Readiness/qwen3.8-gguf_vision-256k-1m_serverless-llama-cpp/releases)
 
 <p align="center">
     <img src="https://raw.githubusercontent.com/ggml-org/llama.cpp/master/media/llama1-icon-transparent.png" alt="llama.cpp logo" width="128">
