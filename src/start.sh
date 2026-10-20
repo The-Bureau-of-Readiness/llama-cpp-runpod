@@ -117,6 +117,11 @@ touch llama.server.log
 
 LD_LIBRARY_PATH=/app /app/llama-server $CACHED_LLAMA_ARGS $LLAMA_SERVER_CMD_ARGS --port $PORT 2>&1 | tee llama.server.log &
 
+if [ -n "${PUSHGATEWAY_URL:-}" ]; then
+    echo "start.sh: Starting Pushgateway metrics pusher to $PUSHGATEWAY_URL"
+    python -u /work/push_metrics.py >/dev/stdout 2>/dev/stderr &
+fi
+
 LLAMA_SERVER_PID=$!
 
 echo "start.sh: Waiting for llama-server to become healthy (downloading/loading the model can take a while)..."
