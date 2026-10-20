@@ -106,6 +106,13 @@ pkill llama-server 2>/dev/null || echo "start.sh: No llama-server running"
 
 echo "start.sh: Running /app/llama-server $CACHED_LLAMA_ARGS $LLAMA_SERVER_CMD_ARGS --port $PORT"
 
+# Metrics support (Prometheus)
+if [ "${ENABLE_METRICS:-0}" = "1" ] || [ "${ENABLE_METRICS:-false}" = "true" ]; then
+    # Add --metrics. If your llama-server supports a metrics port flag, append it here too.
+    LLAMA_SERVER_CMD_ARGS="$LLAMA_SERVER_CMD_ARGS --metrics"
+    echo "start.sh: Metrics enabled (--metrics)."
+fi
+
 touch llama.server.log
 
 LD_LIBRARY_PATH=/app /app/llama-server $CACHED_LLAMA_ARGS $LLAMA_SERVER_CMD_ARGS --port $PORT 2>&1 | tee llama.server.log &
