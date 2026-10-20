@@ -30,8 +30,11 @@ RUN apt-get update --yes --quiet && DEBIAN_FRONTEND=noninteractive apt-get insta
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+
 WORKDIR /work
+
 ADD ./src /work
+COPY handler.py /work/handler.py
 
 RUN pip install -r ./requirements.txt && chmod +x /work/start.sh
 
