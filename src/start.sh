@@ -2,6 +2,7 @@
 set -e -o pipefail
 
 PORT=3098
+CACHED_LLAMA_ARGS=""
 
 fail() {
     echo "start.sh: ERROR: $1"
@@ -16,7 +17,6 @@ cleanup() {
     exit 0
 }
 
-CACHED_LLAMA_ARGS=""
 
 # Return 0 if cached model path resolves, else return 1 (no exit here).
 find_cached_path() {
@@ -50,6 +50,28 @@ if [ -n "$LLAMA_CACHED_MODEL" ]; then
         # Keep LLAMA_ARG_HF_REPO / LLAMA_ARG_HF_FILE so llama-server can download.
     fi
 fi
+
+# Vision mmproj support:
+# User provides the mmproj filename/path inside the HF repo via MMPROJ_HF_FILE.
+# We resolve it to a local cached path and export LLAMA_ARG_MMPROJ for llama-server.
+
+if [ -n "${MMPROJ_HF_FILE:-}" ]; then
+    MMPROJ_REPO="${LLAMA_CACHED_MODEL:-${LLAMA_ARG_HF_REPO:-}}"
+    if [ -z "$MMPROJ_REPO" ]; then
+        fail "MMPROJ_HF_FILE is set but no model repo is configured (LLAMA_ARG_HF_REPO or LLAMA_CACHED_MODEL)."
+    fi
+
+    echo "start.sh: Resolving mmproj path from HF cache..."
+    MMPROJ_PATH="$(python ./find_cached.py "$MMPROJ_REPO" "$MMPROJ_HF_FILE" 2>/dev/null || true)"
+
+    if [ -n "$MMPROJ_PATH" ]; then
+        export LLAMA_ARG_MMPROJ="$MMPROJ_PATH"
+        echo "start.sh: Using cached mmproj: $LLAMA_ARG_MMPROJ"
+    else
+        echo "start.sh: mmproj not found in cache yet; will be available after the first model download."
+    fi
+fi
+
 
 # A .gguf filename pasted into the Quantization field is a common mistake.
 if [[ "$LLAMA_HF_QUANT" == *.gguf ]]; then
