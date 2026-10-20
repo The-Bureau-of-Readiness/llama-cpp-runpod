@@ -78,6 +78,25 @@ Or call any supported OpenAI route directly:
 ## Model caching
 
 To avoid re-downloading the model on every cold start, use RunPod's [model caching](https://docs.runpod.io/serverless/endpoints/model-caching): set your model repo in the endpoint's *Model* field and fill in the *Cached Model* and *Cached Model GGUF Path* advanced settings. See [docs/cached.md](./docs/cached.md) for a step-by-step guide.
+## Docker Run
+
+```bash
+docker run --rm -it --gpus all \
+  -e HF_HOME=/tmp/hf-cache \
+  -e LLAMA_ARG_HF_REPO=ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF \
+  -e MMPROJ_HF_FILE=mmproj-Qwen3.8-Flash-Next-BF16.gguf \
+  -e LLAMA_ARG_CTX_SIZE=262144 \
+  -e LLAMA_ARG_N_PARALLEL=1 \
+  -e MAX_CONCURRENCY=1 \
+  -e LLAMA_ARG_N_GPU_LAYERS=999 \
+  -e LLAMA_ARG_FLASH_ATTN=on \
+  -e LLAMA_ARG_CACHE_TYPE_K=q8_0 \
+  -e LLAMA_ARG_CACHE_TYPE_V=q8_0 \
+  -e LLAMA_ARG_BATCH=2048 \
+  -e LLAMA_ARG_UBATCH=1024 \
+  -e LLAMA_SERVER_CMD_ARGS="-lm mmap --lazy-mode on" \
+  llama-cpp-runpod:test
+```
 
 ## License
 
