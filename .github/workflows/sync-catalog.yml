@@ -85,8 +85,6 @@ jobs:
             fi
             popd > /dev/null
 
-            # Publish a release so RunPod Hub picks up the new content. Skip
-            # only if nothing changed AND this exact tag already exists.
             TAG="$RELEASE_TAG"
             if gh release view "$TAG" --repo "$ORG/$slug" > /dev/null 2>&1; then
               if [ "$CHANGED" = "0" ]; then
