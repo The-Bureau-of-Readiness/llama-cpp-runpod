@@ -1,5 +1,4 @@
-[![Runpod](https://api.runpod.io/badge/eniewold/llama-cpp-runpod)](https://console.runpod.io/hub/listing/eniewold/llama-cpp-runpod)
-
+[![Runpod](https://api.runpod.io/badge/The-Bureau-of-Readiness/llama-cpp-runpod)](https://console.runpod.io/hub/listing/The-Bureau-of-Readiness/llama-cpp-runpod)
 <p align="center">
     <img src="https://raw.githubusercontent.com/ggml-org/llama.cpp/master/media/llama1-icon-transparent.png" alt="llama.cpp logo" width="128">
 </p>
