@@ -8,14 +8,11 @@ import argparse
 
 DEFAULT_CACHE_DIR = "/runpod-volume/huggingface-cache/hub"
 
-
 def get_cache_dir() -> str:
-    # Prefer explicit hub cache path if provided.
     hub_cache = os.getenv("HUGGINGFACE_HUB_CACHE")
     if hub_cache:
         return hub_cache
 
-    # If HF_HOME is set, HF hub cache is typically at $HF_HOME/hub.
     hf_home = os.getenv("HF_HOME")
     if hf_home:
         return os.path.join(hf_home, "hub")
