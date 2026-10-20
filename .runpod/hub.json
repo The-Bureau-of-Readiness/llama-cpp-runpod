@@ -1,14 +1,14 @@
 {
     "title": "256K-1M Qwen3.8-Flash-Next-IQ3_S + Vison (optimised llama.cpp, 256k-1M context, auto runpod model caching)",
-    "description": "Ported from the generic llama.cpp repo. This version is configured with Qwen3.8-Flash-Next-IQ3_S, vision enabled optimised for 5 x 256K concurrent context. Can be adjusted to 1 x 1M context on a single GPU. Or factor up by ~4 x 1M per additonal 100GB GPU in a worker. Drop the KV quant to q4_0 if more concurrency per worker with less accuracy is acceptable. Refactored to fix caching issues and perform initial downloads when no cache exists if caching paths are provided",
+    "description": "Ported from the generic llama.cpp repo. This version is configured with Qwen3.8-Flash-Next-IQ3_S, vision enabled optimised for 5 x 256K concurrent context. Can be adjusted to 1 x 1M context on a single GPU. Or factor up by ~4 x 1M per additonal 100GB GPU in a worker. Drop the KV quant to q4_0 if more concurrency per worker with less accuracy is acceptable. Refactored to fix caching issues and perform initial downloads when no cache exists if caching paths are provided.",
     "type": "serverless",
     "category": "language",
     "iconUrl": "https://raw.githubusercontent.com/ggml-org/llama.cpp/master/media/llama1-icon-transparent.png",
     "config": {
         "runsOn": "GPU",
         "gpuCount": 1,
-        "gpuIds": "BLACKWELL_96,HOPPER_141,BLACKWELL_180,AMPERE_80,ADA_80_PRO"
-        "containerDiskInGb": 150,
+        "gpuIds": "BLACKWELL_96,HOPPER_141,BLACKWELL_180,ADA_80_PRO,AMPERE_80,ADA_48_PRO,AMPERE_48,ADA_24,AMPERE_24",
+        "containerDiskInGb": 200,
         "allowedCudaVersions": ["12.8"],
         "presets": [],
         "env": [
@@ -17,8 +17,8 @@
                 "input": {
                     "name": "Model (Hugging Face GGUF repo)",
                     "type": "huggingface",
-                    "description": "GGUF model repository to serve, e.g. The-Bureau-of-Readiness/Qwen3.8-Flash-Next-GSQ-RCO-GGUF Pick which quantization to use with the Quantization field below. The model is downloaded when a worker starts unless model caching is configured (see advanced options).",
-                    "default": "The-Bureau-of-Readiness/Qwen3.8-Flash-Next-GSQ-RCO-GGUF",
+                    "description": "GGUF model repository to serve, e.g. ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF. Downloads on cold start unless the cached-model options below resolve a cached path first.",
+                    "default": "ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF",
                     "required": true,
                     "advanced": false
                 }
@@ -26,19 +26,69 @@
             {
                 "key": "LLAMA_HF_QUANT",
                 "input": {
-                    "name": "Quantization",
+                    "name": "Quantization (tag)",
                     "type": "string",
-                    "description": "Quantization tag selecting the GGUF file inside the model repo, e.g. UD-Q4_K_XL or Q4_K_M (case-insensitive; must match a file in the repo). Leave empty for the repo's default (Q4_K_M when available). Ignored when 'GGUF File in Repo' is set.",
-                    "default": "IQ3_S",
+                    "description": "Quantization tag selecting the GGUF file inside the repo (case-insensitive). Leave empty to use the repo default. Ignored if 'GGUF File in Repo' is set.",
+                    "default": "",
                     "advanced": false
+                }
+            },
+            {
+                "key": "LLAMA_ARG_HF_FILE",
+                "input": {
+                    "name": "GGUF File in Repo (exact path)",
+                    "type": "string",
+                    "description": "Exact GGUF path inside the repo. Use this for sharded models (e.g. *-00001-of-00002.gguf) or files stored in subfolders. For sharded GGUF, set this to the FIRST shard (00001-of-00002).",
+                    "default": "",
+                    "advanced": true
+                }
+            },
+            {
+                "key": "HF_TOKEN",
+                "input": {
+                    "name": "Hugging Face Token",
+                    "type": "string",
+                    "description": "Access token for gated/private model repos. Leave empty for public models. The worker maps HF_TOKEN to HUGGINGFACE_HUB_TOKEN internally.",
+                    "default": "",
+                    "advanced": true
+                }
+            },
+            {
+                "key": "HF_HOME",
+                "input": {
+                    "name": "HF_HOME (persistent HF cache root)",
+                    "type": "string",
+                    "description": "Set to /runpod-volume/huggingface-cache to persist Hugging Face downloads on the mounted /runpod-volume. This prevents re-downloading on every cold start when /runpod-volume is attached.",
+                    "default": "/runpod-volume/huggingface-cache",
+                    "advanced": true
+                }
+            },
+            {
+                "key": "LLAMA_CACHED_MODEL",
+                "input": {
+                    "name": "Cached Model (optional)",
+                    "type": "string",
+                    "description": "Optional: HF repo id to resolve from the HF cache. If set (with Cached GGUF Path), the worker tries to load from cache first and falls back to downloading if missing. Recommended when using /runpod-volume caching.",
+                    "default": "",
+                    "advanced": true
+                }
+            },
+            {
+                "key": "LLAMA_CACHED_GGUF_PATH",
+                "input": {
+                    "name": "Cached Model GGUF Path (optional)",
+                    "type": "string",
+                    "description": "Optional: Path to GGUF inside the cached repo. Required if Cached Model is set. For sharded GGUF, use the FIRST shard (00001-of-00002).",
+                    "default": "",
+                    "advanced": true
                 }
             },
             {
                 "key": "LLAMA_ARG_CTX_SIZE",
                 "input": {
-                    "name": "Context Size",
+                    "name": "Context Size (total across slots)",
                     "type": "number",
-                    "description": "Total context window in tokens, shared across all parallel slots (each slot gets Context Size / Parallel Slots tokens). Larger values need more VRAM for the KV cache: if the worker runs out of memory, lower this, quantize the KV cache (advanced options), or pick a larger GPU. 0 = the model's full trained context.",
+                    "description": "Total context window in tokens. IMPORTANT: shared across Parallel Slots. Per-slot context is roughly Context Size / Parallel Slots. Example: ctx=1310720 and slots=5 gives ~262144 tokens (~256k) per slot.",
                     "default": 1310720,
                     "advanced": false
                 }
@@ -48,9 +98,19 @@
                 "input": {
                     "name": "Parallel Slots",
                     "type": "number",
-                    "description": "Number of requests one worker serves simultaneously. The context window is split evenly across slots, so raise Context Size along with this for multi-user endpoints.",
+                    "description": "Number of requests served simultaneously per worker. For long context, keep MAX_CONCURRENCY equal to this value to avoid piling multiple jobs behind one llama-server instance.",
                     "default": 5,
                     "advanced": false
+                }
+            },
+            {
+                "key": "MAX_CONCURRENCY",
+                "input": {
+                    "name": "Max Concurrency per Worker",
+                    "type": "number",
+                    "description": "Maximum RunPod jobs accepted concurrently per worker. Recommended: set equal to Parallel Slots (LLAMA_ARG_N_PARALLEL).",
+                    "default": 5,
+                    "advanced": true
                 }
             },
             {
@@ -58,19 +118,9 @@
                 "input": {
                     "name": "GPU Layers",
                     "type": "number",
-                    "description": "Number of model layers to offload to the GPU. 999 = all layers (fastest). Lower this only when the model does not fit in VRAM; layers kept on the CPU are much slower.",
+                    "description": "Number of model layers to offload to the GPU. 999 = all layers. Lower only if the model does not fit in VRAM.",
                     "default": 999,
                     "advanced": false
-                }
-            },
-            {
-                "key": "LLAMA_ARG_N_CPU_MOE",
-                "input": {
-                    "name": "CPU MoE Layers",
-                    "type": "number",
-                    "description": "Mixture-of-Experts models only: keep the expert weights of the first N layers in CPU memory instead of VRAM. Lets large MoE models run on smaller GPUs at reduced speed. 0 = disabled.",
-                    "default": 0,
-                    "advanced": true
                 }
             },
             {
@@ -78,7 +128,7 @@
                 "input": {
                     "name": "Flash Attention",
                     "type": "string",
-                    "description": "Flash Attention speeds up inference and reduces VRAM use. 'auto' enables it when the GPU and model support it.",
+                    "description": "Enable Flash Attention (recommended).",
                     "options": [
                         { "label": "auto", "value": "auto" },
                         { "label": "on", "value": "on" },
@@ -93,7 +143,7 @@
                 "input": {
                     "name": "KV Cache Type (K)",
                     "type": "string",
-                    "description": "Quantization of the K half of the KV cache. q8_0 roughly halves KV-cache VRAM with minimal quality loss; q4_0 quarters it with some quality loss.",
+                    "description": "KV cache quantization. q8_0 is a good default. q4_0 uses less VRAM with more quality loss and can enable higher context/concurrency before OOM.",
                     "options": [
                         { "label": "f16 (default)", "value": "f16" },
                         { "label": "q8_0", "value": "q8_0" },
@@ -108,7 +158,7 @@
                 "input": {
                     "name": "KV Cache Type (V)",
                     "type": "string",
-                    "description": "Quantization of the V half of the KV cache. Requires Flash Attention to be enabled (on or auto).",
+                    "description": "KV cache quantization (V).",
                     "options": [
                         { "label": "f16 (default)", "value": "f16" },
                         { "label": "q8_0", "value": "q8_0" },
@@ -119,21 +169,11 @@
                 }
             },
             {
-                "key": "LLAMA_ARG_JINJA",
-                "input": {
-                    "name": "Jinja Chat Templates",
-                    "type": "boolean",
-                    "description": "Use the model's built-in chat template via the Jinja engine. Recommended; required for tool/function calling with most models.",
-                    "default": true,
-                    "advanced": true
-                }
-            },
-            {
                 "key": "LLAMA_ARG_BATCH",
                 "input": {
-                    "name": "Logical Batch Size",
+                    "name": "Logical Batch Size (-b)",
                     "type": "number",
-                    "description": "Maximum number of tokens submitted to the model per iteration (-b). Rarely needs changing.",
+                    "description": "Logical batch size. Rarely needs changing.",
                     "default": 2048,
                     "advanced": true
                 }
@@ -141,30 +181,10 @@
             {
                 "key": "LLAMA_ARG_UBATCH",
                 "input": {
-                    "name": "Physical Batch Size",
+                    "name": "Physical Batch Size (-ub)",
                     "type": "number",
-                    "description": "Physical batch size per device (-ub). Compute-buffer VRAM scales with this; lower it if you run out of memory during prompt processing. 512K = 1572, 1M = 2048",
-                    "default": 1048,
-                    "advanced": true
-                }
-            },
-            {
-                "key": "LLAMA_ARG_HF_FILE",
-                "input": {
-                    "name": "GGUF File in Repo",
-                    "type": "string",
-                    "description": "Exact .gguf filename inside the model repo, for when the quant tag cannot select the right file (sharded or unusually named files). Leave empty to let the quant tag choose.",
-                    "default": "",
-                    "advanced": true
-                }
-            },
-            {
-                "key": "HF_TOKEN",
-                "input": {
-                    "name": "Hugging Face Token",
-                    "type": "string",
-                    "description": "Access token for downloading gated or private model repos. Leave empty for public models.",
-                    "default": "",
+                    "description": "Physical batch size per device. Higher values can speed up prompt ingestion but increase peak memory use. If you see OOM during prompt/prefill, lower this first.",
+                    "default": 1024,
                     "advanced": true
                 }
             },
@@ -173,48 +193,8 @@
                 "input": {
                     "name": "Extra llama-server Arguments",
                     "type": "string",
-                    "description": "Additional command-line arguments passed verbatim to llama-server for anything not covered by the options above, e.g. --temp 0.7 --top-k 40. Do not set --port. See the llama-server documentation for all flags.",
-                    "default": "-lm mmap --lazy-mode on ",
-                    "advanced": true
-                }
-            },
-            {
-                "key": "LLAMA_CACHED_MODEL",
-                "input": {
-                    "name": "Cached Model (RunPod model caching)",
-                    "type": "string",
-                    "description": "Hugging Face repo of a model cached via RunPod's model caching, e.g. unsloth/Qwen3.8-27B-GGUF. When set, the worker loads the model from the cache instead of downloading it, and the Model field above is ignored. See the README for setup.",
-                    "default": "",
-                    "advanced": true
-                }
-            },
-            {
-                "key": "LLAMA_CACHED_GGUF_PATH",
-                "input": {
-                    "name": "Cached Model GGUF Path",
-                    "type": "string",
-                    "description": "Path of the GGUF file inside the cached model repo, e.g. Qwen3.8-27B-UD-Q4_K_XL.gguf. Required when Cached Model is set.",
-                    "default": "",
-                    "advanced": true
-                }
-            },
-            {
-                "key": "HF_HOME",
-                "input": {
-                    "name": "HF_HOME (cache root)",
-                    "type": "string",
-                    "description": "Root directory for Hugging Face caches. Set this to /runpod-volume/huggingface-cache to persist downloads on the mounted volume.",
-                    "default": "/runpod-volume/huggingface-cache",
-                    "advanced": true
-                }
-            },
-            {
-                "key": "MAX_CONCURRENCY",
-                "input": {
-                    "name": "Max Concurrency per Worker",
-                    "type": "number",
-                    "description": "Maximum jobs one worker accepts at once from the RunPod queue. Requests beyond Parallel Slots queue inside llama-server. Usually set equal to or slightly above Parallel Slots.",
-                    "default": 5,
+                    "description": "Additional command-line arguments passed verbatim to llama-server. Do not set --port. Recommended: -lm mmap --lazy-mode on",
+                    "default": "-lm mmap --lazy-mode on",
                     "advanced": true
                 }
             }
