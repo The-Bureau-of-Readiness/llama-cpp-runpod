@@ -4,11 +4,11 @@
     <img src="https://raw.githubusercontent.com/ggml-org/llama.cpp/master/media/llama1-icon-transparent.png" alt="llama.cpp logo" width="128">
 </p>
 
-# llama.cpp on RunPod Serverless
+# 256K-1M Qwen3.8-Flash-Next-IQ3_S + Vision on RunPod Serverless (llama.cpp)
 
-Serve any GGUF model from Hugging Face as a RunPod **serverless** endpoint, powered by [llama.cpp](https://github.com/ggml-org/llama.cpp)’s `llama-server`.
+Ported from the generic llama.cpp serverless repo and tuned for **Qwen3.8-Flash-Next IQ3_S + vision** at very long context lengths.
 
-This worker exposes an OpenAI-compatible API:
+This worker runs [llama.cpp](https://github.com/ggml-org/llama.cpp)’s `llama-server` and exposes an OpenAI-compatible API:
 
 - `/v1/models`
 - `/v1/chat/completions`
@@ -16,53 +16,68 @@ This worker exposes an OpenAI-compatible API:
 
 Streaming is supported.
 
-The Docker image is built on the official `ghcr.io/ggml-org/llama.cpp:server-cuda` image and is rebuilt automatically when llama.cpp publishes a new server image. Each release of this template is named after the llama.cpp build it ships (e.g. `b10666`). Because the base image tracks a recent CUDA toolkit, workers require hosts with CUDA **12.8+** (the template pins allowed CUDA versions automatically).
+The Docker image is built on the official `ghcr.io/ggml-org/llama.cpp:server-cuda` image and rebuilt automatically whenever llama.cpp publishes a new server image. Workers require hosts with CUDA **12.8+** (the template pins allowed CUDA versions).
+
+---
+
+## What this template is optimized for
+
+- **5 × ~256k context** concurrent on a single large-VRAM GPU (implemented as a shared total context split across 5 parallel slots).
+- Can be adjusted to **1 × ~1M context** per worker by setting a single parallel slot and an appropriate context size.
+- KV cache quantization defaults to **q8_0**. If you need more concurrency / context headroom and can accept some quality loss, switch KV cache to **q4_0**.
+- The Hugging Face model repos used for this worker are maintained under **The-Bureau-of-Readiness/** and are intentionally trimmed to include only the files needed for the selected configuration (to avoid large “download-the-entire-repo” cold starts).
+
+This repo also refactors caching behavior to avoid crash-loops:
+- If cached-model settings are provided but the cache is missing, the worker **falls back to downloading** instead of exiting.
 
 ---
 
 ## Quick start
 
 1. Deploy the template.
-2. Pick a **Model** (`LLAMA_ARG_HF_REPO`): a Hugging Face GGUF repo, e.g. `unsloth/Qwen3.8-27B-GGUF`.
-3. Pick a **Quantization** (`LLAMA_HF_QUANT`): e.g. `Q4_K_M` or `UD-Q4_K_XL` (must match a GGUF file/tag in the repo).  
-   - If the model is sharded or has unusual filenames, set **GGUF File in Repo** (`LLAMA_ARG_HF_FILE`) instead.
-4. Choose a GPU with enough VRAM for:
-   - the GGUF weights, plus
-   - the KV cache (context size dependent).
-5. Adjust **Context Size**, **Parallel Slots**, and advanced options as needed.
-
-By default, the model is downloaded from Hugging Face on worker cold start. For faster cold starts after the first run, enable caching (see below).
+2. Set **Model** (`LLAMA_ARG_HF_REPO`) to one of the trimmed repos, e.g.
+   - `The-Bureau-of-Readiness/Qwen3.8-Flash-Next-GSQ-RCO-GGUF`
+   - `The-Bureau-of-Readiness/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF`
+3. If the repo is vision-capable, set **MMProj file in Repo** (`MMPROJ_HF_FILE`) to the mmproj filename in that same repo, e.g.
+   - `mmproj-Qwen3.8-Flash-Next-BF16.gguf`
+4. Choose a GPU with enough VRAM for the model + KV cache (long context is KV-cache heavy).
+5. Adjust **Context Size**, **Parallel Slots**, **KV cache types**, etc.
 
 ---
 
 ## Configuration
 
-The most important settings, all available in the template UI:
+Most important settings, available in the template UI:
 
 | Setting | Meaning |
 |---|---|
-| Model (`LLAMA_ARG_HF_REPO`) | Hugging Face GGUF repo, `<owner>/<repo>` |
-| Quantization (`LLAMA_HF_QUANT`) | Which quantization/tag to use (ignored when `LLAMA_ARG_HF_FILE` is set) |
+| Model (`LLAMA_ARG_HF_REPO`) | Hugging Face GGUF repo, `<owner>/<repo>` (use the trimmed repos under `The-Bureau-of-Readiness/`) |
+| Quantization (`LLAMA_HF_QUANT`) | Quant tag (ignored when `LLAMA_ARG_HF_FILE` is set) |
 | GGUF File in Repo (`LLAMA_ARG_HF_FILE`) | Exact `.gguf` path inside the repo (use for sharded files like `...-00001-of-00002.gguf` or files in subfolders) |
-| Context Size (`LLAMA_ARG_CTX_SIZE`) | Total context window in tokens, shared across parallel slots |
-| Parallel Slots (`LLAMA_ARG_N_PARALLEL`) | Requests served simultaneously per worker |
-| GPU Layers (`LLAMA_ARG_N_GPU_LAYERS`) | Layers offloaded to the GPU (999 = all) |
-| CPU MoE Layers (`LLAMA_ARG_N_CPU_MOE`) | MoE only: keep expert weights of first N layers on CPU |
-| Flash Attention / KV Cache Types | Speed and VRAM trade-offs for the KV cache |
-| Extra llama-server Arguments (`LLAMA_SERVER_CMD_ARGS`) | Any other `llama-server` flags passed verbatim (**never set `--port`**) |
-| Max Concurrency per Worker (`MAX_CONCURRENCY`) | Max RunPod jobs accepted concurrently by one worker. Recommended: set equal to `LLAMA_ARG_N_PARALLEL` (or slightly above). |
+| MMProj file in Repo (`MMPROJ_HF_FILE`) | **Vision**: mmproj filename/path inside the same repo (resolved from cache and passed to llama-server as `LLAMA_ARG_MMPROJ`) |
+| HF token (`HF_TOKEN`) | Token for gated/private repos (mapped internally to `HUGGINGFACE_HUB_TOKEN`) |
+| HF cache root (`HF_HOME`) | Set to `/runpod-volume/huggingface-cache` when using a mounted volume to persist downloads |
+| Context Size (`LLAMA_ARG_CTX_SIZE`) | **Total** context across all parallel slots |
+| Parallel Slots (`LLAMA_ARG_N_PARALLEL`) | Number of concurrent requests per worker |
+| Max Concurrency (`MAX_CONCURRENCY`) | Max RunPod jobs accepted concurrently per worker (recommended: set equal to `LLAMA_ARG_N_PARALLEL`) |
+| GPU Layers (`LLAMA_ARG_N_GPU_LAYERS`) | 999 = all layers on GPU |
+| Flash Attention (`LLAMA_ARG_FLASH_ATTN`) | Recommended `on` |
+| KV cache type K/V (`LLAMA_ARG_CACHE_TYPE_K` / `LLAMA_ARG_CACHE_TYPE_V`) | q8_0 default; q4_0 uses less VRAM with more quality loss |
+| Batch / Ubatch (`LLAMA_ARG_BATCH` / `LLAMA_ARG_UBATCH`) | Prompt-ingestion speed vs memory tradeoff. If you OOM during prefill, lower `UBATCH` first. |
+| Extra llama-server args (`LLAMA_SERVER_CMD_ARGS`) | Passed verbatim; never set `--port` |
 
-Most settings map directly to `llama-server` options via its `LLAMA_ARG_*` environment variables.
+### Important gotcha: context is shared across slots
+`LLAMA_ARG_CTX_SIZE` is shared across `LLAMA_ARG_N_PARALLEL`.
 
-If your model repo is gated/private, set **Hugging Face Token** (`HF_TOKEN`).
+Example:
+- ctx=1,310,720 and slots=5
+- per-slot ≈ 1,310,720 / 5 = 262,144 tokens (~256k)
 
 ---
 
 ## Calling the endpoint
 
 ### OpenAI-compatible API (recommended)
-Point any OpenAI SDK at your endpoint URL, using your RunPod API key:
-
 ```python
 from openai import OpenAI
 
@@ -73,8 +88,6 @@ client = OpenAI(
 ```
 
 ### RunPod queue API
-You can also use the RunPod queue API (`POST /v2/<ENDPOINT_ID>/run`):
-
 ```json
 { "input": { "prompt": "Hello, who are you?", "stream": false } }
 ```
@@ -83,8 +96,7 @@ You can also use the RunPod queue API (`POST /v2/<ENDPOINT_ID>/run`):
 { "input": { "messages": [{ "role": "user", "content": "Hello!" }], "stream": true } }
 ```
 
-Or call OpenAI routes explicitly via the queue input:
-
+Or call OpenAI routes explicitly:
 ```json
 {
   "input": {
@@ -100,51 +112,51 @@ Or call OpenAI routes explicitly via the queue input:
 
 ---
 
-## Downloads and caching (read this if your model is large)
+## Downloads and caching (recommended)
 
-This worker supports **two** ways to avoid repeatedly downloading large GGUFs.
+### Default behavior (no caching configured)
+If you set only `LLAMA_ARG_HF_REPO` (and optionally `LLAMA_HF_QUANT` / `LLAMA_ARG_HF_FILE`), `llama-server` downloads the model on worker cold start.
 
-### 1) Default behavior: download from Hugging Face on cold start
-If you only set `LLAMA_ARG_HF_REPO` (and optionally `LLAMA_HF_QUANT` / `LLAMA_ARG_HF_FILE`), `llama-server` downloads the model when a worker starts.
+> Note: the recommended repos under `The-Bureau-of-Readiness/` are intentionally trimmed so cold starts don’t pull unnecessary extra quants/files.
 
-This is simplest, but slow for large models.
-
-### 2) Persistent cache on `/runpod-volume` (recommended for large models)
-If you attach a persistent volume (“global store”) mounted at `/runpod-volume`, you can make Hugging Face store its cache there. The first cold start downloads once; subsequent cold starts re-use the cache.
-
-Set:
+### Persistent caching on `/runpod-volume` (recommended)
+If you attach persistent storage mounted at `/runpod-volume`, set:
 
 - `HF_HOME=/runpod-volume/huggingface-cache`
 
-That makes the Hugging Face hub cache live at:
+This makes Hugging Face use:
 
 - `/runpod-volume/huggingface-cache/hub`
 
-### 3) Cached model path resolution (optional; speeds up and avoids re-downloading)
-This worker can resolve a GGUF path directly from the Hugging Face cache (instead of downloading) using:
+so subsequent cold starts reuse the cached snapshots.
 
-- `LLAMA_CACHED_MODEL` (HF repo id, e.g. `unsloth/Qwen3.8-27B-GGUF`)
-- `LLAMA_CACHED_GGUF_PATH` (path to GGUF inside the repo, e.g. `Qwen3.8-27B-Q4_K_M.gguf` or `IQ3_S/...-00001-of-00002.gguf`)
+### Cached model path resolution (optional)
+You can also provide:
 
-**Behavior:**
-- If the GGUF is already present in the cache, the worker starts `llama-server` with `-m <resolved path>` (fast).
-- If it is not present yet, the worker falls back to downloading from Hugging Face (warming the cache for future starts).
+- `LLAMA_CACHED_MODEL` = HF repo id
+- `LLAMA_CACHED_GGUF_PATH` = GGUF path inside that repo
 
-### Sharded models (`...-00001-of-00002.gguf`)
-If your repo contains shards like `...-00001-of-00002.gguf` and `...-00002-of-00002.gguf`, point `LLAMA_ARG_HF_FILE` and/or `LLAMA_CACHED_GGUF_PATH` at the **first shard** (`00001-of-00002.gguf`). Ensure all shards exist in the repo; they must be downloaded into the same snapshot directory.
+If set, the worker tries to resolve the GGUF from the HF cache first. If it’s not found yet, the worker falls back to downloading and will use the cache on later starts.
+
+### Sharded models
+For sharded GGUF files like `...-00001-of-00002.gguf`, always point `LLAMA_ARG_HF_FILE` / `LLAMA_CACHED_GGUF_PATH` to the **first shard** (`00001-of-00002.gguf`).
 
 ### Debugging cache resolution
-To see whether the cache contains your model:
-
 ```bash
 python ./find_cached.py <owner>/<repo> <path/inside/repo.gguf>
 ```
 
-It prints the resolved absolute path, or exits with an error if the model is not cached (or if the repo/path doesn’t match).
-
 ---
+## Docker (local test or use direct in other provider)
 
-## Docker Run
+### Build
+
+```bash
+docker build -t llama-cpp-runpod:test .
+
+```
+
+### Run
 
 ```bash
 docker run --rm -it --gpus all \
@@ -164,6 +176,11 @@ docker run --rm -it --gpus all \
   llama-cpp-runpod:test
 ```
 
+
+---
+
 ## License
 
 See the [LICENSE](./LICENSE) file.
+
+
