@@ -35,20 +35,24 @@ CACHED_LLAMA_ARGS=""
 
 find_cached_path() {
     local model_path
-    model_path=$(python ./find_cached.py "$LLAMA_CACHED_MODEL" "$LLAMA_CACHED_GGUF_PATH")
-    if [ $? -ne 0 ] || [ -z "$model_path" ]; then
-        fail "Could not resolve cached model path. Check that LLAMA_CACHED_MODEL and LLAMA_CACHED_GGUF_PATH are correct and the model is fully cached."
-    fi
+    model_path=$(python ./find_cached.py "$LLAMA_CACHED_MODEL" "$LLAMA_CACHED_GGUF_PATH") || return 1
+    [ -n "$model_path" ] || return 1
     CACHED_LLAMA_ARGS="-m $model_path"
+    return 0
 }
 
-# When RunPod model caching is used, load the model from the cache and ignore
-# any Hugging Face download settings so llama-server does not try to download.
+# When RunPod model caching is used, prefer the cache, but download if missing.
 if [ -n "$LLAMA_CACHED_MODEL" ]; then
     echo "start.sh: Model caching is enabled. Resolving cached model path..."
-    find_cached_path
-    echo "start.sh: Using cached model: $CACHED_LLAMA_ARGS"
-    unset LLAMA_ARG_HF_REPO LLAMA_ARG_HF_FILE LLAMA_ARG_MODEL
+
+    if find_cached_path; then
+        echo "start.sh: Using cached model: $CACHED_LLAMA_ARGS"
+        unset LLAMA_ARG_HF_REPO LLAMA_ARG_HF_FILE LLAMA_ARG_MODEL
+    else
+        echo "start.sh: Cache miss; falling back to Hugging Face download."
+        CACHED_LLAMA_ARGS=""
+        # Keep LLAMA_ARG_HF_REPO / LLAMA_ARG_HF_FILE set so llama-server can download
+    fi
 fi
 
 # A .gguf filename pasted into the Quantization field is a common mistake -
