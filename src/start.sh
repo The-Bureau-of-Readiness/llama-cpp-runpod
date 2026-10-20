@@ -27,6 +27,11 @@ find_cached_path() {
     return 0
 }
 
+# Map HF_TOKEN (template field) to the env var huggingface_hub expects.
+if [ -n "${HF_TOKEN:-}" ] && [ -z "${HUGGINGFACE_HUB_TOKEN:-}" ]; then
+    export HUGGINGFACE_HUB_TOKEN="$HF_TOKEN"
+fi
+
 # Prefer cache if configured; fall back to HF download if not found.
 if [ -n "$LLAMA_CACHED_MODEL" ]; then
     echo "start.sh: Model caching is enabled. Resolving cached model path..."
