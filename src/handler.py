@@ -6,16 +6,14 @@ generated output in a streaming fashion.
 """
 
 from typing import Any
-import runpod
 import os
+import runpod
+
 from utils import JobInput
 from engine import LlamaCPPEngine, LlamaCPPOpenAIEngine
 
-# set max concurrency from environment variable or default
 DEFAULT_MAX_CONCURRENCY = 8
-
 max_concurrency = int(os.getenv("MAX_CONCURRENCY", DEFAULT_MAX_CONCURRENCY))
-
 
 async def handler(job: Any):
     """
@@ -25,16 +23,12 @@ async def handler(job: Any):
     """
 
     job_input = JobInput(job["input"])
-    engine_class = (
-        LlamaCPPOpenAIEngine if job_input.openai_route else LlamaCPPEngine
-    )
+    engine_class = LlamaCPPOpenAIEngine if job_input.openai_route else LlamaCPPEngine
     engine = engine_class()
 
-    job = engine.generate(job_input)
-
-    async for batch in job:
+    gen = engine.generate(job_input)
+    async for batch in gen:
         yield batch
-
 
 runpod.serverless.start(
     {
@@ -43,3 +37,4 @@ runpod.serverless.start(
         "return_aggregate_stream": True,
     }
 )
+
