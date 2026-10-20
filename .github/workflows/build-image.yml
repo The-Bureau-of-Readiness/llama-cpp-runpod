@@ -27,6 +27,7 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ github.sha }}
+            ghcr.io/the-bureau-of-readiness/qwen3.8-gguf_vision-256k-1m_serverless-llama-cpp:latest
+            ghcr.io/the-bureau-of-readiness/qwen3.8-gguf_vision-256k-1m_serverless-llama-cpp:${{ github.sha }}
+
 
