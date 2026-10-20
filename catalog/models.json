@@ -1,24 +1,106 @@
 [
-    {
-        "slug": "qwen3.8-27b-q8_0",
-        "vram_gb": 48,
-        "keywords": "Qwen 3.8 27B",
-        "description": "Qwen3.8 27B at Q8_0 quality with 256k context, served as an OpenAI-compatible endpoint. Pre-configured for 48 GB GPUs - deploy and go.",
-        "hf_repo": "unsloth/Qwen3.8-27B-GGUF",
-        "quant": "Q8_0",
-        "weights_gb": 27.1,
-        "gpuIds": "AMPERE_48,ADA_48_PRO,AMPERE_80,ADA_80_PRO",
-        "containerDiskInGb": 45,
-        "env": {
-            "HF_HOME": "/runpod-volume/huggingface-cache",
-            "LLAMA_ARG_CTX_SIZE": 262144,
-            "LLAMA_ARG_N_PARALLEL": 1,
-            "LLAMA_ARG_N_GPU_LAYERS": 999,
-            "LLAMA_ARG_FLASH_ATTN": "on",
-            "LLAMA_ARG_CACHE_TYPE_K": "q8_0",
-            "LLAMA_ARG_CACHE_TYPE_V": "q8_0",
-            "MAX_CONCURRENCY": 1
-        },
-        "readme_intro": "Qwen3.8 27B in Q8_0 quantization (near-lossless quality) with the full 256k-token context window, quantized KV cache, and Flash Attention. Sized for a single 48 GB GPU. Each worker serves one request at a time; RunPod scales workers out under load."
-    }
+  {
+    "slug": "qwen3p8-flash-next-vision-5x256k-q8",
+    "vram_gb": 96,
+    "keywords": "Qwen 3.8 Flash Next Vision",
+    "description": "Qwen3.8-Flash-Next-IQ3_S + vision tuned for ~5 concurrent 256k contexts per worker (ctx=1310720, slots=5) using KV cache q8_0. Best on 96GB GPUs (BLACKWELL_96).",
+    "hf_repo": "ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF",
+    "quant": "",
+    "weights_gb": 80.0,
+    "gpuIds": "BLACKWELL_96,HOPPER_141,BLACKWELL_180,ADA_80_PRO,AMPERE_80",
+    "containerDiskInGb": 200,
+    "env": {
+      "HF_HOME": "/runpod-volume/huggingface-cache",
+      "LLAMA_MMproj_HF_FILE": "mmproj-Qwen3.8-Flash-Next-BF16.gguf",
+      "LLAMA_ARG_CTX_SIZE": 1310720,
+      "LLAMA_ARG_N_PARALLEL": 5,
+      "MAX_CONCURRENCY": 5,
+      "LLAMA_ARG_N_GPU_LAYERS": 999,
+      "LLAMA_ARG_FLASH_ATTN": "on",
+      "LLAMA_ARG_CACHE_TYPE_K": "q8_0",
+      "LLAMA_ARG_CACHE_TYPE_V": "q8_0",
+      "LLAMA_ARG_BATCH": 2048,
+      "LLAMA_ARG_UBATCH": 1024,
+      "LLAMA_SERVER_CMD_ARGS": "-lm mmap --lazy-mode on"
+    },
+    "readme_intro": "Configured for 5 concurrent ~256k contexts on a single large-VRAM GPU by using a shared total context: ctx=1,310,720 and slots=5 yields ~262,144 tokens per slot. Keep MAX_CONCURRENCY equal to slots. If you see OOM during prompt ingestion, reduce UBATCH. If you see OOM during long generation, reduce slots or switch KV cache to q4_0."
+  },
+  {
+    "slug": "qwen3p8-flash-next-vision-5x512k-q4",
+    "vram_gb": 96,
+    "keywords": "Qwen 3.8 Flash Next Vision",
+    "description": "Qwen3.8-Flash-Next-IQ3_S + vision tuned for ~5 concurrent 512k contexts per worker (ctx=2621440, slots=5) with KV cache q4_0.",
+    "hf_repo": "ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF",
+    "quant": "",
+    "weights_gb": 80.0,
+    "gpuIds": "BLACKWELL_96,HOPPER_141,BLACKWELL_180",
+    "containerDiskInGb": 200,
+    "env": {
+      "HF_HOME": "/runpod-volume/huggingface-cache",
+      "LLAMA_MMproj_HF_FILE": "mmproj-Qwen3.8-Flash-Next-BF16.gguf",
+      "LLAMA_ARG_CTX_SIZE": 2621440,
+      "LLAMA_ARG_N_PARALLEL": 5,
+      "MAX_CONCURRENCY": 5,
+      "LLAMA_ARG_N_GPU_LAYERS": 999,
+      "LLAMA_ARG_FLASH_ATTN": "on",
+      "LLAMA_ARG_CACHE_TYPE_K": "q4_0",
+      "LLAMA_ARG_CACHE_TYPE_V": "q4_0",
+      "LLAMA_ARG_BATCH": 2048,
+      "LLAMA_ARG_UBATCH": 1024,
+      "LLAMA_SERVER_CMD_ARGS": "-lm mmap --lazy-mode on"
+    },
+    "readme_intro": "Aggressive long-context config. Uses KV cache q4_0 to reduce VRAM. If unstable or OOM, reduce slots (N_PARALLEL) or reduce Context Size. Keep MAX_CONCURRENCY equal to N_PARALLEL."
+  },
+  {
+    "slug": "qwen3p8-flash-next-vision-1x1m-q8",
+    "vram_gb": 96,
+    "keywords": "Qwen 3.8 Flash Next Vision",
+    "description": "Qwen3.8-Flash-Next-IQ3_S + vision tuned for a single ~1M context request per worker (ctx=1048576, slots=1) using KV cache q8_0.",
+    "hf_repo": "ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF",
+    "quant": "",
+    "weights_gb": 80.0,
+    "gpuIds": "BLACKWELL_96,HOPPER_141,BLACKWELL_180,ADA_80_PRO,AMPERE_80",
+    "containerDiskInGb": 200,
+    "env": {
+      "HF_HOME": "/runpod-volume/huggingface-cache",
+      "LLAMA_MMproj_HF_FILE": "mmproj-Qwen3.8-Flash-Next-BF16.gguf",
+      "LLAMA_ARG_CTX_SIZE": 1048576,
+      "LLAMA_ARG_N_PARALLEL": 1,
+      "MAX_CONCURRENCY": 1,
+      "LLAMA_ARG_N_GPU_LAYERS": 999,
+      "LLAMA_ARG_FLASH_ATTN": "on",
+      "LLAMA_ARG_CACHE_TYPE_K": "q8_0",
+      "LLAMA_ARG_CACHE_TYPE_V": "q8_0",
+      "LLAMA_ARG_BATCH": 2048,
+      "LLAMA_ARG_UBATCH": 1024,
+      "LLAMA_SERVER_CMD_ARGS": "-lm mmap --lazy-mode on"
+    },
+    "readme_intro": "Single-slot ultra-long-context config. If you want faster prompt ingestion and have headroom, try UBATCH=2048; if you see OOM during prefill, lower UBATCH. For throughput, scale workers rather than raising MAX_CONCURRENCY above 1."
+  },
+  {
+    "slug": "qwen3p8-flash-next-coder-ctx64k-a40plus",
+    "vram_gb": 48,
+    "keywords": "Qwen 3.8 Flash Next Coder",
+    "description": "Qwen3.8-Flash-Next Coder GGUF tuned for A40-class and other 45GB+ GPUs. Balanced long context without requiring 96GB cards.",
+    "hf_repo": "ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF",
+    "quant": "",
+    "weights_gb": 0.0,
+    "gpuIds": "ADA_48_PRO,AMPERE_48,ADA_80_PRO,AMPERE_80,BLACKWELL_96,HOPPER_141,BLACKWELL_180",
+    "containerDiskInGb": 100,
+    "env": {
+      "HF_HOME": "/runpod-volume/huggingface-cache",
+      "LLAMA_MMproj_HF_FILE": "mmproj-Qwen3.8-Flash-Next-BF16.gguf",
+      "LLAMA_ARG_CTX_SIZE": 1048576,
+      "LLAMA_ARG_N_PARALLEL": 4,
+      "MAX_CONCURRENCY": 4,
+      "LLAMA_ARG_N_GPU_LAYERS": 999,
+      "LLAMA_ARG_FLASH_ATTN": "on",
+      "LLAMA_ARG_CACHE_TYPE_K": "q8_0",
+      "LLAMA_ARG_CACHE_TYPE_V": "q8_0",
+      "LLAMA_ARG_BATCH": 2048,
+      "LLAMA_ARG_UBATCH": 1024,
+      "LLAMA_SERVER_CMD_ARGS": "-lm mmap --lazy-mode on"
+    },
+    "readme_intro": "Coder variant intended for 48GB-class GPUs (A40 / RTX A6000 / L40S / 6000 Ada). Default is 256k context, single slot. Raise slots only if you have VRAM headroom; keep MAX_CONCURRENCY equal to slots."
+  }
 ]
