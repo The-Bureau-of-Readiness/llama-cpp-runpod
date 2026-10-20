@@ -1,15 +1,15 @@
 {
-    "title": "llama.cpp",
-    "description": "Serve any GGUF model from Hugging Face as an OpenAI-compatible serverless endpoint, powered by llama.cpp.",
+    "title": "256K-1M Qwen3.8-Flash-Next-IQ3_S + Vison (optimised llama.cpp, 256k-1M context, auto runpod model caching)",
+    "description": "Ported from the generic llama.cpp repo. This version is configured with Qwen3.8-Flash-Next-IQ3_S, vision enabled optimised for 5 x 256K concurrent context. Can be adjusted to 1 x 1M context on a single GPU. Or factor up by ~4 x 1M per additonal 100GB GPU in a worker. Drop the KV quant to q4_0 if more concurrency per worker with less accuracy is acceptable. Refactored to fix caching issues and perform initial downloads when no cache exists if caching paths are provided",
     "type": "serverless",
     "category": "language",
     "iconUrl": "https://raw.githubusercontent.com/ggml-org/llama.cpp/master/media/llama1-icon-transparent.png",
     "config": {
         "runsOn": "GPU",
         "gpuCount": 1,
-        "gpuIds": "AMPERE_24,ADA_24,AMPERE_48,ADA_48_PRO,AMPERE_80,ADA_80_PRO",
-        "containerDiskInGb": 50,
-        "allowedCudaVersions": ["12.8", "12.9"],
+        "gpuIds": "BLACKWELL_96,HOPPER_141,BLACKWELL_180,AMPERE_80,ADA_80_PRO"
+        "containerDiskInGb": 150,
+        "allowedCudaVersions": ["12.8"],
         "presets": [],
         "env": [
             {
@@ -17,8 +17,8 @@
                 "input": {
                     "name": "Model (Hugging Face GGUF repo)",
                     "type": "huggingface",
-                    "description": "GGUF model repository to serve, e.g. unsloth/Qwen3.8-27B-GGUF. Pick which quantization to use with the Quantization field below. The model is downloaded when a worker starts unless model caching is configured (see advanced options).",
-                    "default": "unsloth/Qwen3.8-27B-GGUF",
+                    "description": "GGUF model repository to serve, e.g. The-Bureau-of-Readiness/Qwen3.8-Flash-Next-GSQ-RCO-GGUF Pick which quantization to use with the Quantization field below. The model is downloaded when a worker starts unless model caching is configured (see advanced options).",
+                    "default": "The-Bureau-of-Readiness/Qwen3.8-Flash-Next-GSQ-RCO-GGUF",
                     "required": true,
                     "advanced": false
                 }
@@ -29,7 +29,7 @@
                     "name": "Quantization",
                     "type": "string",
                     "description": "Quantization tag selecting the GGUF file inside the model repo, e.g. UD-Q4_K_XL or Q4_K_M (case-insensitive; must match a file in the repo). Leave empty for the repo's default (Q4_K_M when available). Ignored when 'GGUF File in Repo' is set.",
-                    "default": "UD-Q4_K_XL",
+                    "default": "IQ3_S",
                     "advanced": false
                 }
             },
@@ -39,7 +39,7 @@
                     "name": "Context Size",
                     "type": "number",
                     "description": "Total context window in tokens, shared across all parallel slots (each slot gets Context Size / Parallel Slots tokens). Larger values need more VRAM for the KV cache: if the worker runs out of memory, lower this, quantize the KV cache (advanced options), or pick a larger GPU. 0 = the model's full trained context.",
-                    "default": 131072,
+                    "default": 1310720,
                     "advanced": false
                 }
             },
@@ -49,7 +49,7 @@
                     "name": "Parallel Slots",
                     "type": "number",
                     "description": "Number of requests one worker serves simultaneously. The context window is split evenly across slots, so raise Context Size along with this for multi-user endpoints.",
-                    "default": 1,
+                    "default": 5,
                     "advanced": false
                 }
             },
@@ -84,7 +84,7 @@
                         { "label": "on", "value": "on" },
                         { "label": "off", "value": "off" }
                     ],
-                    "default": "auto",
+                    "default": "on",
                     "advanced": true
                 }
             },
@@ -99,7 +99,7 @@
                         { "label": "q8_0", "value": "q8_0" },
                         { "label": "q4_0", "value": "q4_0" }
                     ],
-                    "default": "f16",
+                    "default": "q8_0",
                     "advanced": true
                 }
             },
@@ -114,7 +114,7 @@
                         { "label": "q8_0", "value": "q8_0" },
                         { "label": "q4_0", "value": "q4_0" }
                     ],
-                    "default": "f16",
+                    "default": "q8_0",
                     "advanced": true
                 }
             },
@@ -143,8 +143,8 @@
                 "input": {
                     "name": "Physical Batch Size",
                     "type": "number",
-                    "description": "Physical batch size per device (-ub). Compute-buffer VRAM scales with this; lower it if you run out of memory during prompt processing.",
-                    "default": 512,
+                    "description": "Physical batch size per device (-ub). Compute-buffer VRAM scales with this; lower it if you run out of memory during prompt processing. 512K = 1572, 1M = 2048",
+                    "default": 1048,
                     "advanced": true
                 }
             },
@@ -174,7 +174,7 @@
                     "name": "Extra llama-server Arguments",
                     "type": "string",
                     "description": "Additional command-line arguments passed verbatim to llama-server for anything not covered by the options above, e.g. --temp 0.7 --top-k 40. Do not set --port. See the llama-server documentation for all flags.",
-                    "default": "",
+                    "default": "-lm mmap --lazy-mode on ",
                     "advanced": true
                 }
             },
@@ -214,7 +214,7 @@
                     "name": "Max Concurrency per Worker",
                     "type": "number",
                     "description": "Maximum jobs one worker accepts at once from the RunPod queue. Requests beyond Parallel Slots queue inside llama-server. Usually set equal to or slightly above Parallel Slots.",
-                    "default": 8,
+                    "default": 5,
                     "advanced": true
                 }
             }
