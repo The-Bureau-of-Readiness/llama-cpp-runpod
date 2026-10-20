@@ -1,12 +1,13 @@
 [![Runpod](https://api.runpod.io/badge/The-Bureau-of-Readiness/llama-cpp-runpod)](https://console.runpod.io/hub/listing/The-Bureau-of-Readiness/llama-cpp-runpod)
+[![Release](https://img.shields.io/github/v/release/The-Bureau-of-Readiness/llama-cpp-runpod?display_name=tag&sort=semver)](https://github.com/The-Bureau-of-Readiness/llama-cpp-runpod/releases)
 
 <p align="center">
     <img src="https://raw.githubusercontent.com/ggml-org/llama.cpp/master/media/llama1-icon-transparent.png" alt="llama.cpp logo" width="128">
 </p>
 
-# 256K-1M Qwen3.8-Flash-Next-IQ3_S + Vision on RunPod Serverless (llama.cpp)
+# 256K-1M Qwen3.8 / Qwen3p8 Flash Next (IQ3_S) + Vision on RunPod Serverless (llama.cpp)
 
-Ported from the generic llama.cpp serverless repo and tuned for **Qwen3.8-Flash-Next IQ3_S + vision** at very long context lengths.
+Ported from the generic llama.cpp serverless repo and tuned for **Qwen3.8 (Qwen3p8) Flash Next IQ3_S + vision** at very long context lengths.
 
 This worker runs [llama.cpp](https://github.com/ggml-org/llama.cpp)’s `llama-server` and exposes an OpenAI-compatible API:
 
@@ -54,7 +55,7 @@ Most important settings, available in the template UI:
 | Model (`LLAMA_ARG_HF_REPO`) | Hugging Face GGUF repo, `<owner>/<repo>` (use the trimmed repos under `The-Bureau-of-Readiness/`) |
 | Quantization (`LLAMA_HF_QUANT`) | Quant tag (ignored when `LLAMA_ARG_HF_FILE` is set) |
 | GGUF File in Repo (`LLAMA_ARG_HF_FILE`) | Exact `.gguf` path inside the repo (use for sharded files like `...-00001-of-00002.gguf` or files in subfolders) |
-| MMProj file in Repo (`MMPROJ_HF_FILE`) | **Vision**: mmproj filename/path inside the same repo (resolved from cache and passed to llama-server as `LLAMA_ARG_MMPROJ`) |
+| MMProj file in Repo (`MMPROJ_HF_FILE`) | **Vision**: mmproj filename/path inside the same repo (resolved from HF cache and set as `LLAMA_ARG_MMPROJ`) |
 | HF token (`HF_TOKEN`) | Token for gated/private repos (mapped internally to `HUGGINGFACE_HUB_TOKEN`) |
 | HF cache root (`HF_HOME`) | Set to `/runpod-volume/huggingface-cache` when using a mounted volume to persist downloads |
 | Context Size (`LLAMA_ARG_CTX_SIZE`) | **Total** context across all parallel slots |
@@ -147,21 +148,36 @@ python ./find_cached.py <owner>/<repo> <path/inside/repo.gguf>
 ```
 
 ---
+
+## Metrics (optional)
+
+If enabled, llama.cpp can expose Prometheus-format metrics via `--metrics`.
+
+Recommended toggles (if you wired these into `hub.json` and `start.sh`):
+
+- `ENABLE_METRICS=true` (or `1`)
+- `METRICS_PORT=8080`
+
+If you also configured the optional Pushgateway pusher:
+
+- `PUSHGATEWAY_URL=http://your-pushgateway:9091`
+- `PUSHGATEWAY_JOB=llamacpp-serverless`
+- `PUSH_INTERVAL_SECONDS=2`
+
+---
+
 ## Docker (local test or use direct in other provider)
 
 ### Build
-
 ```bash
 docker build -t llama-cpp-runpod:test .
-
 ```
 
 ### Run
-
 ```bash
 docker run --rm -it --gpus all \
   -e HF_HOME=/tmp/hf-cache \
-  -e LLAMA_ARG_HF_REPO=ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF \
+  -e LLAMA_ARG_HF_REPO=The-Bureau-of-Readiness/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF \
   -e MMPROJ_HF_FILE=mmproj-Qwen3.8-Flash-Next-BF16.gguf \
   -e LLAMA_ARG_CTX_SIZE=262144 \
   -e LLAMA_ARG_N_PARALLEL=1 \
@@ -176,11 +192,8 @@ docker run --rm -it --gpus all \
   llama-cpp-runpod:test
 ```
 
-
 ---
 
 ## License
 
 See the [LICENSE](./LICENSE) file.
-
-
