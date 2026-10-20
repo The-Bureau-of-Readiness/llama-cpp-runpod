@@ -1,6 +1,6 @@
 {
-    "title": "256K-1M Qwen3.8-Flash-Next-IQ3_S + Vison (optimised llama.cpp, 256k-1M context, auto runpod model caching)",
-    "description": "Ported from the generic llama.cpp repo. This version is configured with Qwen3.8-Flash-Next-IQ3_S, vision enabled optimised for 5 x 256K concurrent context. Can be adjusted to 1 x 1M context on a single GPU. Or factor up by ~4 x 1M per additonal 100GB GPU in a worker. Drop the KV quant to q4_0 if more concurrency per worker with less accuracy is acceptable. Refactored to fix caching issues and perform initial downloads when no cache exists if caching paths are provided.",
+    "title": "256K-1M Qwen3.8 / Qwen3p8 Flash-Next IQ3_S + Vision (optimised llama.cpp, 256k-1M context, auto Runpod model caching)",
+    "description": "Ported from the generic llama.cpp repo. This version is configured with Qwen3.8 (Qwen3p8) Flash-Next IQ3_S, vision enabled, optimised for 5 x 256K concurrent context. Can be adjusted to 1 x 1M context on a single GPU. Or factor up by ~4 x 1M per additional 100GB GPU in a worker (requires multi-GPU configuration). Drop the KV quant to q4_0 if more concurrency per worker with less accuracy is acceptable. Refactored to fix caching issues and perform initial downloads when no cache exists if caching paths are provided."
     "type": "serverless",
     "category": "language",
     "iconUrl": "https://raw.githubusercontent.com/ggml-org/llama.cpp/master/media/llama1-icon-transparent.png",
