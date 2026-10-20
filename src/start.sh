@@ -57,6 +57,7 @@ fi
 
 if [ -n "${MMPROJ_HF_FILE:-}" ]; then
     MMPROJ_REPO="${LLAMA_CACHED_MODEL:-${LLAMA_ARG_HF_REPO:-}}"
+    MMPROJ_REPO="${MMPROJ_REPO%%:*}"
     if [ -z "$MMPROJ_REPO" ]; then
         fail "MMPROJ_HF_FILE is set but no model repo is configured (LLAMA_ARG_HF_REPO or LLAMA_CACHED_MODEL)."
     fi
