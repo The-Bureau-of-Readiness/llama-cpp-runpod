@@ -44,6 +44,16 @@
                 }
             },
             {
+                "key": "MMPROJ_HF_FILE",
+                "input": {
+                    "name": "MMProj file in Repo (vision)",
+                    "type": "string",
+                    "description": "Path to the mmproj file inside the model repo (vision). Example: mmproj-Qwen3.8-Flash-Next-BF16.gguf. This worker resolves it from the HF cache and sets LLAMA_ARG_MMPROJ automatically.",
+                    "default": "",
+                    "advanced": true
+                }
+            },
+            {
                 "key": "HF_TOKEN",
                 "input": {
                     "name": "Hugging Face Token",
