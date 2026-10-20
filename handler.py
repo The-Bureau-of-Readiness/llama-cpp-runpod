@@ -1,6 +1,5 @@
 """
-This is an empty file used to mark the repository as a Runpod-compatible
-serverless endpoint because they won't stop pretending it's not.
+Marker file for Runpod Hub scanning.
 
-I'm tired.
+The real handler code is inside the Docker image under /work/handler.py.
 """
