@@ -1,7 +1,7 @@
 # Official llama.cpp server image. The digest pin is managed automatically by
 # .github/workflows/latest-llamacpp.yml, which follows the floating
 # server-cuda tag and cuts a release named after the llama.cpp build number.
-FROM ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:ffbb0d908f22ca66c0261dc96b260f4a12429eda88bd561c09fd9fa94caa220a
+FROM ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:31b39eacce2bab5fde9286ec3980ed5548a3987644e94da0d0c2092f93313538
 
 ENV PYTHONUNBUFFERED=1
 # Optional default: make HF caching land on the Runpod mounted volume.
