@@ -5,9 +5,9 @@
     <img src="https://raw.githubusercontent.com/ggml-org/llama.cpp/master/media/llama1-icon-transparent.png" alt="llama.cpp logo" width="128">
 </p>
 
-# 256K-1M Qwen3.8 / Qwen3p8 Flash Next (IQ3_S) + Vision on RunPod Serverless (llama.cpp)
+# Serverless 256K–1M Qwen3p8 / Qwen3.8-Flash-Next-IQ3_S + Vision (optional Coder variant, llama.cpp, auto model cache)
 
-Ported from the generic llama.cpp serverless repo and tuned for **Qwen3.8 (Qwen3p8) Flash Next IQ3_S + vision** at very long context lengths.
+Serverless worker adapted from `llama-cpp-runpod` for Qwen3.8/Qwen3p8 Flash-Next (IQ3_S) with a vision-enabled 256K-1M token long-context. Includes presets for the base model and an optional Coder variant. You can also point it at other trimmed GGUF repos by changing `LLAMA_ARG_HF_REPO` and `MMPROJ_HF_FILE`.
 
 This worker runs [llama.cpp](https://github.com/ggml-org/llama.cpp)’s `llama-server` and exposes an OpenAI-compatible API:
 
