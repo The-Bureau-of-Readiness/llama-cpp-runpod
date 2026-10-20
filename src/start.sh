@@ -34,7 +34,7 @@ fi
 
 # Put Hugging Face caches on the mounted volume for persistence.
 if [ -n "${HF_HOME:-}" ]; then
-    export HUGGINGFACE_HUB_CACHE="${HUGGINGFACE_HUB_CACHE:-${HF_HOME%/}/hub}"
+    unset HUGGINGFACE_HUB_CACHE
 fi
 
 # Prefer cache if configured; fall back to HF download if not found.
