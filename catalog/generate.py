@@ -134,6 +134,12 @@ def main():
     meta = {}
     for entry in catalog:
         hub = copy.deepcopy(base_hub)
+
+        # Ensure HF cache persists on the mounted /runpod-volume by default.
+        for item in hub["config"]["env"]:
+            if item["key"] == "HF_HOME":
+                item["input"]["default"] = entry.get("env", {}).get("HF_HOME", "/runpod-volume/huggingface-cache")
+
         hub["title"], _ = derive_names(entry)
         hub["description"] = entry["description"]
         hub["config"]["gpuIds"] = entry["gpuIds"]
