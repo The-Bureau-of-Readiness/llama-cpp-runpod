@@ -9,16 +9,8 @@ import argparse
 DEFAULT_CACHE_DIR = "/runpod-volume/huggingface-cache/hub"
 
 def get_cache_dir() -> str:
-    hub_cache = os.getenv("HUGGINGFACE_HUB_CACHE")
-    if hub_cache:
-        return hub_cache
-
-    hf_home = os.getenv("HF_HOME")
-    if hf_home:
-        return os.path.join(hf_home, "hub")
-
-    return DEFAULT_CACHE_DIR
-
+    hf_home = os.getenv("HF_HOME", "/runpod-volume/huggingface-cache")
+    return os.path.join(hf_home.rstrip("/"), "hub")
 
 def candidate_model_dirs(cache_dir: str, model_name: str):
     # HF uses models--org--repo
