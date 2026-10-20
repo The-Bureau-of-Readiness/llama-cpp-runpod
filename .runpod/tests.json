@@ -1,33 +1,56 @@
 {
-    "tests": [
-        {
-            "name": "execute_a_prompt",
-            "input": {
-                "prompt": "Hi! Who are you?"
-            },
-            "timeout": 60000
-        }
-    ],
-    "config": {
-        "gpuTypeId": "NVIDIA GeForce RTX 4090",
-        "gpuCount": 1,
-        "env": [
-            {
-                "key": "LLAMA_ARG_HF_REPO",
-                "value": "unsloth/gemma-3-270m-it-GGUF:Q6_K"
-            },
-            {
-                "key": "LLAMA_ARG_CTX_SIZE",
-                "value": "2048"
-            },
-            {
-                "key": "LLAMA_ARG_N_GPU_LAYERS",
-                "value": "999"
-            }
-        ],
-        "allowedCudaVersions": [
-            "12.8",
-            "12.9"
-        ]
+  "tests": [
+    {
+      "name": "execute_a_prompt",
+      "input": { "prompt": "Hi! Who are you?" },
+      "timeout": 120000
     }
+  ],
+  "config": {
+    "gpuTypeId": "NVIDIA A40",
+    "gpuCount": 1,
+    "env": [
+      {
+        "key": "LLAMA_ARG_HF_REPO",
+        "value": "The-Bureau-of-Readiness/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF"
+      },
+      {
+        "key": "MMPROJ_HF_FILE",
+        "value": "mmproj-Qwen3.8-Flash-Next-BF16.gguf"
+      },
+      {
+        "key": "LLAMA_ARG_CTX_SIZE",
+        "value": "2048"
+      },
+      {
+        "key": "LLAMA_ARG_N_PARALLEL",
+        "value": "1"
+      },
+      {
+        "key": "MAX_CONCURRENCY",
+        "value": "1"
+      },
+      {
+        "key": "LLAMA_ARG_N_GPU_LAYERS",
+        "value": "999"
+      },
+      {
+        "key": "LLAMA_ARG_FLASH_ATTN",
+        "value": "on"
+      },
+      {
+        "key": "LLAMA_ARG_CACHE_TYPE_K",
+        "value": "q8_0"
+      },
+      {
+        "key": "LLAMA_ARG_CACHE_TYPE_V",
+        "value": "q8_0"
+      },
+      {
+        "key": "LLAMA_SERVER_CMD_ARGS",
+        "value": "-lm mmap --lazy-mode on"
+      }
+    ],
+    "allowedCudaVersions": ["12.8"]
+  }
 }
